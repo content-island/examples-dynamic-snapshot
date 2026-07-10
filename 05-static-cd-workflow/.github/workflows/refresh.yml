@@ -1,0 +1,24 @@
+name: Refresh Vercel snapshot
+
+# Refresco en caliente (sin rebuild): llama a /api/refresh en el api desplegado.
+# Lo dispara el webhook de Content Island con event name "content-refresh".
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [content-refresh]
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint de refresh en Vercel
+        env:
+          REFRESH_URL: ${{ secrets.REFRESH_URL }}
+          REFRESH_SECRET: ${{ secrets.REFRESH_SECRET }}
+        run: |
+          response=$(curl -sS -o /tmp/body -w "%{http_code}" -X POST "$REFRESH_URL" \
+            -H "x-refresh-secret: $REFRESH_SECRET")
+          echo "HTTP $response"
+          cat /tmp/body
+          echo
+          [ "$response" = "200" ] || exit 1
